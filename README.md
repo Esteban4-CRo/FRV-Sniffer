@@ -1,5 +1,5 @@
 # FRV SNIFFER
-<img src="./.img/frv.png" width="500"/>
+<img src="./.img/frv.png" width="700"/>
 
 ---
 Analizador de trafico de red con función Alerta
