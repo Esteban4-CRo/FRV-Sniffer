@@ -43,7 +43,7 @@ Url en el navegador: **http://localhost:8000**
 sudo python3 backend/sniffer.py -i eth0
 ```
 
-### Capture Limitada
+### Captura Limitada
 
 ```bash
 sudo python3 backend/sniffer.py -c 1000
@@ -52,13 +52,13 @@ sudo python3 backend/sniffer.py -c 1000
 ### Apply BPF Filter
 
 ```bash
-# HTTP/HTTPS only
+# HTTP/HTTPS 
 sudo python3 backend/sniffer.py -f "port 80 or port 443"
 
-# Specific IP
+# IP
 sudo python3 backend/sniffer.py -f "host 192.168.1.100"
 
-# TCP only
+# TCP 
 sudo python3 backend/sniffer.py -f "tcp"
 ```
 
