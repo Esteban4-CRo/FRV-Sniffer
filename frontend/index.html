@@ -1,0 +1,763 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FRV Sniffer | Network Traffic Analyzer</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;600;700&family=Inter:wght@300;400;600;700;900&display=swap');
+        
+        :root {
+            --bg-primary: #ffffff;
+            --bg-secondary: #f8f8f8;
+            --bg-card: #ffffff;
+            --bg-hover: #f0f0f0;
+            
+            --text-primary: #000000;
+            --text-secondary: #666666;
+            --text-muted: #999999;
+            
+            --border-color: #e0e0e0;
+            --border-thick: #000000;
+            
+            --accent: #000000;
+            --shadow: rgba(0, 0, 0, 0.05);
+            --shadow-md: rgba(0, 0, 0, 0.1);
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+        }
+        
+        /* Header */
+        header {
+            background: var(--bg-primary);
+            border-bottom: 2px solid var(--border-thick);
+            padding: 2rem;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        
+        .header-content {
+            max-width: 1600px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        
+        .logo-icon {
+            width: 48px;
+            height: 48px;
+            background: var(--accent);
+            border: 2px solid var(--accent);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            color: white;
+            font-weight: 900;
+        }
+        
+        .logo-text h1 {
+            font-size: 1.75rem;
+            font-weight: 900;
+            letter-spacing: -1px;
+            color: var(--text-primary);
+        }
+        
+        .logo-text p {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            font-weight: 400;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+        
+        .status-badge {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            font-size: 0.875rem;
+            font-weight: 600;
+            font-family: 'IBM Plex Mono', monospace;
+        }
+        
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            background: var(--accent);
+            border-radius: 50%;
+            animation: pulse 2s ease-in-out infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+        
+        /* Container */
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        
+        /* Stats Grid */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        
+        /* Stat Card */
+        .stat-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            padding: 1.5rem;
+            transition: all 0.2s ease;
+        }
+        
+        .stat-card:hover {
+            box-shadow: 0 4px 12px var(--shadow-md);
+            border-color: var(--accent);
+        }
+        
+        .stat-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 1rem;
+        }
+        
+        .stat-label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+        }
+        
+        .stat-icon {
+            width: 40px;
+            height: 40px;
+            background: var(--accent);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            font-weight: 700;
+        }
+        
+        .stat-value {
+            font-size: 2.5rem;
+            font-weight: 900;
+            font-family: 'IBM Plex Mono', monospace;
+            line-height: 1;
+            margin-bottom: 0.5rem;
+            letter-spacing: -2px;
+        }
+        
+        .stat-change {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+            font-family: 'IBM Plex Mono', monospace;
+        }
+        
+        /* Chart Container */
+        .chart-container {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        
+        .chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .chart-title {
+            font-size: 1.125rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            letter-spacing: -0.5px;
+        }
+        
+        .chart-controls {
+            display: flex;
+            gap: 0.5rem;
+        }
+        
+        .chart-btn {
+            padding: 0.5rem 1rem;
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            font-size: 0.875rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-family: 'IBM Plex Mono', monospace;
+        }
+        
+        .chart-btn:hover {
+            background: var(--accent);
+            color: white;
+            border-color: var(--accent);
+        }
+        
+        .chart-btn.active {
+            background: var(--accent);
+            color: white;
+            border-color: var(--accent);
+        }
+        
+        /* Table */
+        .packet-table-container {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            overflow: hidden;
+            margin-bottom: 2rem;
+        }
+        
+        .table-header {
+            padding: 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .table-title {
+            font-size: 1.125rem;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+        
+        .search-box {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            padding: 0.5rem 1rem;
+        }
+        
+        .search-box input {
+            background: none;
+            border: none;
+            color: var(--text-primary);
+            font-size: 0.875rem;
+            outline: none;
+            width: 200px;
+            font-family: 'IBM Plex Mono', monospace;
+        }
+        
+        .search-box input::placeholder {
+            color: var(--text-muted);
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 0.8125rem;
+        }
+        
+        thead {
+            background: var(--bg-secondary);
+        }
+        
+        th {
+            text-align: left;
+            padding: 1rem 1.5rem;
+            font-weight: 700;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-size: 0.75rem;
+            border-bottom: 2px solid var(--border-color);
+        }
+        
+        tbody tr {
+            border-bottom: 1px solid var(--border-color);
+            transition: background 0.2s ease;
+        }
+        
+        tbody tr:hover {
+            background: var(--bg-hover);
+        }
+        
+        tbody tr.anomaly {
+            background: #000000;
+            color: white;
+            font-weight: 600;
+        }
+        
+        tbody tr.anomaly td {
+            color: white;
+        }
+        
+        td {
+            padding: 1rem 1.5rem;
+            color: var(--text-secondary);
+        }
+        
+        .protocol-badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border: 1px solid var(--border-color);
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            background: var(--bg-primary);
+        }
+        
+        .anomaly .protocol-badge {
+            background: white;
+            color: black;
+            border-color: white;
+        }
+        
+        .alert-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1rem;
+            background: var(--accent);
+            color: white;
+            font-size: 0.875rem;
+            margin-bottom: 0.5rem;
+            font-family: 'IBM Plex Mono', monospace;
+            font-weight: 600;
+        }
+        
+        /* Loading */
+        .loading {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 4rem;
+            gap: 1rem;
+        }
+        
+        .spinner {
+            width: 48px;
+            height: 48px;
+            border: 3px solid var(--border-color);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        canvas {
+            max-height: 400px;
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+            }
+            
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .header-content {
+                flex-direction: column;
+                gap: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="header-content">
+            <div class="logo">
+                <div class="logo-icon">F</div>
+                <div class="logo-text">
+                    <h1>FRV SNIFFER</h1>
+                    <p>Network Traffic Analyzer</p>
+                </div>
+            </div>
+            <div class="status-badge">
+                <div class="status-dot"></div>
+                <span>SYSTEM ACTIVE</span>
+            </div>
+        </div>
+    </header>
+
+    <div class="container">
+        <!-- Stats Dashboard -->
+        <div class="dashboard-grid">
+            <div class="stat-card">
+                <div class="stat-header">
+                    <div>
+                        <div class="stat-label">Total Packets</div>
+                        <div class="stat-value" id="total-packets">0</div>
+                        <div class="stat-change" id="packets-rate">0.00 pps</div>
+                    </div>
+                    <div class="stat-icon">▀</div>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-header">
+                    <div>
+                        <div class="stat-label">Protocols</div>
+                        <div class="stat-value" id="active-protocols">0</div>
+                        <div class="stat-change">Active</div>
+                    </div>
+                    <div class="stat-icon">◆</div>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-header">
+                    <div>
+                        <div class="stat-label">Unique IPs</div>
+                        <div class="stat-value" id="unique-ips">0</div>
+                        <div class="stat-change">Connections</div>
+                    </div>
+                    <div class="stat-icon">●</div>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-header">
+                    <div>
+                        <div class="stat-label">Alerts</div>
+                        <div class="stat-value" id="alerts-count">0</div>
+                        <div class="stat-change" id="alert-severity">No threats</div>
+                    </div>
+                    <div class="stat-icon">▲</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Protocol Distribution Chart -->
+        <div class="chart-container">
+            <div class="chart-header">
+                <div class="chart-title">Protocol Distribution</div>
+                <div class="chart-controls">
+                    <button class="chart-btn active" onclick="updateChartType('pie')">PIE</button>
+                    <button class="chart-btn" onclick="updateChartType('bar')">BAR</button>
+                    <button class="chart-btn" onclick="exportData()">EXPORT CSV</button>
+                </div>
+            </div>
+            <canvas id="protocol-chart"></canvas>
+        </div>
+
+        <!-- Traffic Timeline -->
+        <div class="chart-container">
+            <div class="chart-header">
+                <div class="chart-title">Traffic Timeline</div>
+            </div>
+            <canvas id="traffic-chart"></canvas>
+        </div>
+
+        <!-- Alerts Section -->
+        <div class="chart-container" id="alerts-section" style="display: none;">
+            <div class="chart-header">
+                <div class="chart-title">Security Alerts</div>
+            </div>
+            <div id="alerts-list"></div>
+        </div>
+
+        <!-- Packet Table -->
+        <div class="packet-table-container">
+            <div class="table-header">
+                <div class="table-title">Real-Time Packets</div>
+                <div class="search-box">
+                    <span>◆</span>
+                    <input type="text" id="search-input" placeholder="Search IP, protocol...">
+                </div>
+            </div>
+            <div style="overflow-x: auto;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>TIMESTAMP</th>
+                            <th>PROTOCOL</th>
+                            <th>SOURCE IP</th>
+                            <th>DEST IP</th>
+                            <th>PORT</th>
+                            <th>INFO</th>
+                        </tr>
+                    </thead>
+                    <tbody id="packet-table-body">
+                        <tr>
+                            <td colspan="7" class="loading">
+                                <div class="spinner"></div>
+                                <span>Waiting for sniffer data...</span>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        // Global state
+        let protocolChart = null;
+        let trafficChart = null;
+        let currentChartType = 'pie';
+        let packets = [];
+
+        // Initialize charts
+        function initCharts() {
+            const protocolCtx = document.getElementById('protocol-chart').getContext('2d');
+            const trafficCtx = document.getElementById('traffic-chart').getContext('2d');
+
+            protocolChart = new Chart(protocolCtx, {
+                type: 'pie',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        data: [],
+                        backgroundColor: [
+                            '#000000',
+                            '#333333',
+                            '#666666',
+                            '#999999',
+                            '#cccccc',
+                            '#e0e0e0'
+                        ],
+                        borderColor: '#ffffff',
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: {
+                            position: 'right',
+                            labels: {
+                                color: '#000000',
+                                font: { size: 12, family: 'IBM Plex Mono', weight: '600' },
+                                padding: 15
+                            }
+                        }
+                    }
+                }
+            });
+
+            trafficChart = new Chart(trafficCtx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'Packets/s',
+                        data: [],
+                        borderColor: '#000000',
+                        backgroundColor: 'rgba(0, 0, 0, 0.05)',
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: { 
+                                color: '#666666',
+                                font: { family: 'IBM Plex Mono' }
+                            },
+                            grid: { color: '#e0e0e0' }
+                        },
+                        x: {
+                            ticks: { 
+                                color: '#666666',
+                                font: { family: 'IBM Plex Mono' }
+                            },
+                            grid: { color: '#e0e0e0' }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            labels: {
+                                color: '#000000',
+                                font: { size: 12, family: 'IBM Plex Mono', weight: '600' }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Fetch stats
+        async function fetchStats() {
+            try {
+                const response = await fetch('/api/stats');
+                const stats = await response.json();
+                
+                document.getElementById('total-packets').textContent = stats.total_packets.toLocaleString();
+                document.getElementById('packets-rate').textContent = `${stats.packets_per_second.toFixed(2)} pps`;
+                document.getElementById('active-protocols').textContent = Object.keys(stats.protocol_distribution).length;
+                document.getElementById('unique-ips').textContent = Object.keys(stats.top_ips).length;
+                document.getElementById('alerts-count').textContent = stats.alerts_count;
+                
+                if (stats.protocol_distribution) {
+                    const protocols = Object.keys(stats.protocol_distribution);
+                    const counts = Object.values(stats.protocol_distribution);
+                    
+                    protocolChart.data.labels = protocols;
+                    protocolChart.data.datasets[0].data = counts;
+                    protocolChart.update();
+                }
+                
+                if (stats.recent_alerts && stats.recent_alerts.length > 0) {
+                    document.getElementById('alerts-section').style.display = 'block';
+                    const alertsList = document.getElementById('alerts-list');
+                    alertsList.innerHTML = stats.recent_alerts.map(alert => `
+                        <div class="alert-badge">
+                            <span>▲</span>
+                            <span><strong>${alert.type.toUpperCase()}</strong>: ${alert.message}</span>
+                        </div>
+                    `).join('');
+                    
+                    const severity = stats.recent_alerts[0].severity;
+                    document.getElementById('alert-severity').textContent = severity === 'high' ? 'High priority' : 'Monitoring';
+                }
+                
+            } catch (error) {
+                console.error('Error fetching stats:', error);
+            }
+        }
+
+        // Fetch recent packets
+        async function fetchPackets() {
+            try {
+                const response = await fetch('/api/packets/recent');
+                packets = await response.json();
+                updatePacketTable(packets);
+            } catch (error) {
+                console.error('Error fetching packets:', error);
+            }
+        }
+
+        // Update packet table
+        function updatePacketTable(packetsData) {
+            const tbody = document.getElementById('packet-table-body');
+            
+            if (packetsData.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 2rem;">No packets captured yet</td></tr>';
+                return;
+            }
+            
+            tbody.innerHTML = packetsData.slice(-50).reverse().map(packet => `
+                <tr class="${packet.anomaly ? 'anomaly' : ''}">
+                    <td>${packet.id}</td>
+                    <td>${new Date(packet.timestamp).toLocaleTimeString()}</td>
+                    <td><span class="protocol-badge">${packet.protocol}</span></td>
+                    <td>${packet.src_ip || 'N/A'}</td>
+                    <td>${packet.dst_ip || 'N/A'}</td>
+                    <td>${packet.src_port ? packet.src_port + ' → ' + packet.dst_port : 'N/A'}</td>
+                    <td style="max-width: 300px; overflow: hidden; text-overflow: ellipsis;">${packet.info}</td>
+                </tr>
+            `).join('');
+        }
+
+        // Fetch traffic timeline
+        async function fetchTrafficTimeline() {
+            try {
+                const response = await fetch('/api/traffic/timeline');
+                const timeline = await response.json();
+                
+                if (timeline.length > 0) {
+                    const labels = timeline.map(t => new Date(t.timestamp).toLocaleTimeString());
+                    const data = timeline.map(t => t.packets);
+                    
+                    trafficChart.data.labels = labels;
+                    trafficChart.data.datasets[0].data = data;
+                    trafficChart.update();
+                }
+            } catch (error) {
+                console.error('Error fetching timeline:', error);
+            }
+        }
+
+        // Update chart type
+        function updateChartType(type) {
+            currentChartType = type;
+            protocolChart.config.type = type;
+            protocolChart.update();
+            
+            document.querySelectorAll('.chart-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+        }
+
+        // Export data
+        function exportData() {
+            window.location.href = '/api/export/csv';
+        }
+
+        // Search functionality
+        document.getElementById('search-input').addEventListener('input', (e) => {
+            const searchTerm = e.target.value.toLowerCase();
+            const filteredPackets = packets.filter(p => 
+                (p.src_ip && p.src_ip.includes(searchTerm)) ||
+                (p.dst_ip && p.dst_ip.includes(searchTerm)) ||
+                (p.protocol && p.protocol.toLowerCase().includes(searchTerm)) ||
+                (p.info && p.info.toLowerCase().includes(searchTerm))
+            );
+            updatePacketTable(filteredPackets);
+        });
+
+        // Initialize and start polling
+        initCharts();
+        fetchStats();
+        fetchPackets();
+        fetchTrafficTimeline();
+
+        // Refresh every 2 seconds
+        setInterval(() => {
+            fetchStats();
+            fetchPackets();
+            fetchTrafficTimeline();
+        }, 2000);
+    </script>
+</body>
+</html>
