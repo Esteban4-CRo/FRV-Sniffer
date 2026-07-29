@@ -316,9 +316,11 @@ class PacketAnalyzer:
 class FRVSniffer:
     """FRV Sniffer - Analizador principal de red"""
 
-    def __init__(self, interface: Optional[str] = None, search_str: Optional[str] = None):
+    def __init__(self, interface: Optional[str] = None, search_str: Optional[str] = None, verbose: bool = False, quiet: bool = False):
         self.interface = interface
         self.search_str = search_str
+        self.verbose = verbose
+        self.quiet = quiet
         self.analyzer = PacketAnalyzer()
         self.running = False
         self.packet_queue = deque(maxlen=100)
@@ -334,6 +336,94 @@ class FRVSniffer:
 
         self.data_file = os.path.join(self.data_dir, "packets.jsonl")
         self.stats_file = os.path.join(self.data_dir, "stats.json")
+
+    def print_packet_live(self, packet, packet_info):
+        """Imprime el paquete en tiempo real estilo combinación TCPdump y Wireshark"""
+        if self.quiet:
+            return
+
+        # Colores ANSI
+        RS = "\033[0m"
+        GREY = "\033[90m"
+        RED = "\033[91m"
+        GREEN = "\033[92m"
+        YELLOW = "\033[93m"
+        BLUE = "\033[94m"
+        MAGENTA = "\033[95m"
+        CYAN = "\033[96m"
+        WHITE = "\033[97m"
+
+        proto_colors = {
+            "TCP": CYAN,
+            "UDP": MAGENTA,
+            "ICMP": YELLOW,
+            "DNS": BLUE,
+            "HTTP": GREEN,
+            "ARP": WHITE
+        }
+
+        color = proto_colors.get(packet_info["protocol"], GREY)
+        
+        # Formato de timestamp simplificado (HH:MM:SS.ms)
+        try:
+            dt = datetime.fromisoformat(packet_info["timestamp"])
+            time_str = dt.strftime("%H:%M:%S") + f".{dt.microsecond // 1000:03d}"
+        except Exception:
+            time_str = "00:00:00.000"
+
+        # Badge de protocolo
+        proto_badge = f"{color}[{packet_info['protocol']:^5}]{RS}"
+
+        # Direcciones IP origen y destino
+        src = f"{packet_info['src_ip'] or 'local'}"
+        dst = f"{packet_info['dst_ip'] or 'local'}"
+        
+        if packet_info["src_port"]:
+            src += f":{packet_info['src_port']}"
+        if packet_info["dst_port"]:
+            dst += f":{packet_info['dst_port']}"
+
+        connection_str = f"{src:25s} ──▶ {dst:25s}"
+        length_str = f"[{packet_info['length']:4d} B]"
+
+        # Mensaje de anomalía destacado
+        anomaly_flag = ""
+        if packet_info["anomaly"]:
+            anomaly_flag = f" {RED}⚠ ANOMALÍA: {packet_info['alert_type'].upper()}{RS}"
+
+        # Línea principal (estilo TCPdump)
+        print(f"{GREY}[{time_str}]{RS} {proto_badge} {connection_str} {GREY}{length_str}{RS} {packet_info['info']}{anomaly_flag}")
+
+        # Si el modo verboso está activo
+        if self.verbose:
+            # Imprimir desglose de capas estilo Wireshark
+            print(f"  {GREY}├── capas:{RS}")
+            layers = []
+            temp = packet
+            while temp:
+                layers.append(temp.name)
+                temp = temp.payload
+            print(f"  {GREY}│   {WHITE}" + " ──▶ ".join(layers) + f"{RS}")
+            
+            # Si tiene datos crudos (Raw payload), mostrar hexdump
+            from scapy.all import Raw
+            if Raw in packet:
+                print(f"  {GREY}└── payload hexdump:{RS}")
+                raw_payload = packet[Raw].load
+                # Truncar hexdump a 128 bytes máximo
+                max_bytes = 128
+                if len(raw_payload) > max_bytes:
+                    truncated = raw_payload[:max_bytes]
+                    from scapy.all import hexdump
+                    hd_str = hexdump(truncated, dump=True)
+                    indented = "\n".join("      " + line for line in hd_str.splitlines())
+                    print(indented)
+                    print(f"      {GREY}... ({len(raw_payload) - max_bytes} bytes más) ...{RS}")
+                else:
+                    from scapy.all import hexdump
+                    hd_str = hexdump(raw_payload, dump=True)
+                    indented = "\n".join("      " + line for line in hd_str.splitlines())
+                    print(indented)
 
     def packet_handler(self, packet):
         """Maneja cada paquete capturado"""
@@ -360,6 +450,9 @@ class FRVSniffer:
                     return
 
             self.packet_queue.append(packet_info)
+
+            # Imprimir paquete por consola en tiempo real
+            self.print_packet_live(packet, packet_info)
 
             with self._file_lock:
                 with open(self.data_file, 'a', encoding='utf-8') as f:
@@ -664,6 +757,10 @@ FRV Sniffer v{VERSION} — By {AUTHOR}
     parser.add_argument('-p', '--protocol', choices=['tcp', 'udp', 'icmp', 'dns', 'http', 'https', 'ftp', 'ssh', 'all'],
                         help='Filtrar captura por protocolo específico')
     parser.add_argument('-s', '--search', help='Filtro de búsqueda de texto dentro del paquete (IP, protocolo, info)')
+    parser.add_argument('-v', '--verbose', action='store_true',
+                        help='Mostrar detalle de capas y hexdump de los paquetes (estilo Wireshark/TCPdump)')
+    parser.add_argument('-q', '--quiet', action='store_true',
+                        help='Modo silencioso (no mostrar traza de paquetes en consola, solo alertas)')
     parser.add_argument('-l', '--list', action='store_true',
                         help='Listar interfaces de red disponibles y salir')
 
@@ -715,7 +812,7 @@ FRV Sniffer v{VERSION} — By {AUTHOR}
         else:
             final_filter = proto_bpf
 
-    sniffer = FRVSniffer(interface=interface, search_str=args.search)
+    sniffer = FRVSniffer(interface=interface, search_str=args.search, verbose=args.verbose, quiet=args.quiet)
     sniffer.start_capture(packet_count=args.count, filter_str=final_filter)
 
 

@@ -32,12 +32,14 @@ show_help() {
     echo "  -p, --protocol <protocolo>  Filtrar por protocolo específico: [tcp, udp, icmp, dns, http, https, ftp, ssh, all]"
     echo "  -f, --filter <filtro_bpf>   Filtro BPF adicional (ej: \"host 192.168.1.100\")"
     echo "  -s, --search <texto>        Filtro de búsqueda de texto dentro del paquete"
+    echo "  -v, --verbose               Mostrar detalle de capas y hexdump de paquetes (estilo Wireshark)"
+    echo "  -q, --quiet                 Modo silencioso (no mostrar traza de paquetes en consola, solo alertas)"
     echo "  -h, --help                  Mostrar esta pantalla de ayuda y salir"
     echo ""
     echo "Ejemplos:"
     echo "  sudo ./start.sh -i eth0 -c 10"
     echo "  sudo ./start.sh -p dns -s \"google\""
-    echo "  sudo ./start.sh -i wlan0 -p tcp -c 100 -s \"GET\""
+    echo "  sudo ./start.sh -i wlan0 -p tcp -c 100 -s \"GET\" -v"
     echo ""
     exit 0
 }
@@ -48,6 +50,8 @@ COUNT=""
 PROTO=""
 FILTER=""
 SEARCH=""
+VERBOSE=""
+QUIET=""
 
 while [[ "$#" -gt 0 ]]; do
     case $1 in
@@ -56,6 +60,8 @@ while [[ "$#" -gt 0 ]]; do
         -p|--protocol) PROTO="$2"; shift ;;
         -f|--filter) FILTER="$2"; shift ;;
         -s|--search) SEARCH="$2"; shift ;;
+        -v|--verbose) VERBOSE="1" ;;
+        -q|--quiet) QUIET="1" ;;
         -h|--help) show_help ;;
         *) echo "Opción desconocida: $1"; show_help ;;
     esac
@@ -134,6 +140,8 @@ if [ -n "$COUNT" ]; then SNIFFER_ARGS="$SNIFFER_ARGS -c $COUNT"; fi
 if [ -n "$PROTO" ]; then SNIFFER_ARGS="$SNIFFER_ARGS -p $PROTO"; fi
 if [ -n "$FILTER" ]; then SNIFFER_ARGS="$SNIFFER_ARGS -f \"$FILTER\""; fi
 if [ -n "$SEARCH" ]; then SNIFFER_ARGS="$SNIFFER_ARGS -s \"$SEARCH\""; fi
+if [ -n "$VERBOSE" ]; then SNIFFER_ARGS="$SNIFFER_ARGS -v"; fi
+if [ -n "$QUIET" ]; then SNIFFER_ARGS="$SNIFFER_ARGS -q"; fi
 
 # Start packet capture
 cd backend

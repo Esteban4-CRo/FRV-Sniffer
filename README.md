@@ -100,7 +100,7 @@ sudo python3 backend/sniffer.py -i eth0
 
 ## Parámetros y Opciones Avanzadas
 
-El motor del sniffer admite múltiples configuraciones desde la línea de comandos para modular y especializar la captura:
+El motor del sniffer admite múltiples configuraciones desde la línea de comandos para modular y especializar la captura, ofreciendo una visualización potente tipo combinación **Wireshark (desglose de capas y hexdump)** y **TCPdump (traza en consola en tiempo real)**:
 
 ```bash
 # Listar interfaces de red disponibles y salir (estilo Wireshark/TCPdump)
@@ -109,7 +109,11 @@ python3 backend/sniffer.py -l
 # Ejecutar la captura en una interfaz específica limitando la cantidad a 10 paquetes
 sudo python3 backend/sniffer.py -i eth0 -c 10
 
-# Aplicar un Filtro BPF (Berkeley Packet Filter) a nivel de red
+# Filtrar por un protocolo predefinido (TCP, UDP, ICMP, DNS, HTTP, HTTPS, FTP, SSH)
+sudo python3 backend/sniffer.py -p dns
+sudo python3 backend/sniffer.py -p tcp -c 100
+
+# Aplicar un Filtro BPF (Berkeley Packet Filter) personalizado
 sudo python3 backend/sniffer.py -f "port 80 or port 443"
 sudo python3 backend/sniffer.py -i eth0 -f "tcp"
 
@@ -117,8 +121,15 @@ sudo python3 backend/sniffer.py -i eth0 -f "tcp"
 sudo python3 backend/sniffer.py -s "GET"
 sudo python3 backend/sniffer.py -s "192.168.1.50"
 
-# Ejemplo completo combinado: captura en eth0, limitando a 50 paquetes y buscando consultas DNS a "google"
-sudo python3 backend/sniffer.py -i eth0 -c 50 -f "udp and port 53" -s "google"
+# MODO VERBOSO (Estilo Wireshark/TCPdump -X): Muestra capas y volcado hexadecimal del payload
+sudo python3 backend/sniffer.py -v
+sudo python3 backend/sniffer.py -i eth0 -p tcp -c 20 -v
+
+# MODO SILENCIOSO: Únicamente muestra alertas de seguridad críticas en terminal (ideal para monitoreo limpio)
+sudo python3 backend/sniffer.py -q
+
+# Ejemplo completo combinado: captura en eth0, limitando a 50 paquetes, filtrando por DNS, buscando la palabra "google" y mostrando hexdump
+sudo python3 backend/sniffer.py -i eth0 -c 50 -p dns -s "google" -v
 ```
 
 ---
