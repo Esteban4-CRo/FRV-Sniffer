@@ -1,13 +1,15 @@
 #!/bin/bash
 
 # FRV Sniffer - Dashboard Server Only
+# By EstebanCRO
 
-echo "╔══════════════════════════════════════════════════════════════╗"
-echo "║                                                              ║"
-echo "║                       FRV SNIFFER                            ║"
-echo "║                    Dashboard Server                          ║"
-echo "║                                                              ║"
-echo "╚══════════════════════════════════════════════════════════════╝"
+echo -e "\e[96m╔══════════════════════════════════════════════════════════════╗"
+echo -e "║                                                              ║"
+echo -e "║                       FRV SNIFFER                            ║"
+echo -e "║                    Dashboard Server                          ║"
+echo -e "║                     By EstebanCRO                            ║"
+echo -e "║                                                              ║"
+echo -e "╚══════════════════════════════════════════════════════════════╝\e[0m"
 echo ""
 
 cd "$(dirname "$0")"
