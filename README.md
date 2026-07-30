@@ -1,6 +1,6 @@
 #  FRV SNIFFER
 
-<img src="./.img/frv.png" width="1000"/>
+
 
 ---
 
