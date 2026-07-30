@@ -5,7 +5,6 @@
 ---
 
 ## Analizador de Tráfico de Red con Detección de Anomalías en Tiempo Real
-### *Desarrollado por EstebanCRO*
 
 **FRV Sniffer** es una solución robusta y ligera de captura de paquetes y detección automática de amenazas en redes locales. Permite a administradores de sistemas y estudiantes de ciberseguridad visualizar gráficamente el tráfico de red e identificar anomalías de seguridad en tiempo real a través de un panel web interactivo de alto rendimiento.
 
